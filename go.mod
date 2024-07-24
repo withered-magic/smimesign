@@ -3,6 +3,9 @@ module github.com/github/smimesign
 go 1.12
 
 require (
+	github.com/aws/aws-sdk-go-v2 v1.30.3 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.27.27 // indirect
+	github.com/aws/aws-sdk-go-v2/service/kms v1.35.3 // indirect
 	github.com/certifi/gocertifi v0.0.0-20180118203423-deb3ae2ef261
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pborman/getopt v0.0.0-20180811024354-2b5b3bfb099b

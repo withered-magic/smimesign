@@ -27,6 +27,8 @@ import (
 	"strings"
 	"time"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	svckms "github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/github/smimesign/kms"
 )
 
@@ -39,6 +41,7 @@ var (
 	ecdsaCurve = flag.String("ecdsa-curve", "", "ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521")
 	ed25519Key = flag.Bool("ed25519", false, "Generate an Ed25519 key")
 	kmsKeyId   = flag.String("kms-key-id", "", "KMS key used for signing the certificate")
+	region     = flag.String("region", "", "Region the KMS key is located in")
 )
 
 func publicKey(priv any) any {
@@ -68,7 +71,7 @@ func main() {
 	switch *ecdsaCurve {
 	case "":
 		if *kmsKeyId != "" {
-			priv, err = kms.NewPrivateKey(context.Background(), *kmsKeyId)
+			priv, err = newKmsPrivateKey(context.Background())
 		} else if *ed25519Key {
 			_, priv, err = ed25519.GenerateKey(rand.Reader)
 		} else {
@@ -180,4 +183,13 @@ func main() {
 		log.Fatalf("Error closing key.pem: %v", err)
 	}
 	log.Print("wrote key.pem\n")
+}
+
+func newKmsPrivateKey(ctx context.Context) (*kms.PrivateKey, error) {
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	awsCfg.Region = *region
+	return kms.NewPrivateKey(ctx, svckms.NewFromConfig(awsCfg), *kmsKeyId)
 }

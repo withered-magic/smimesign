@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/github/smimesign/certstore"
@@ -122,6 +123,11 @@ func findUserIdentity() (certstore.Identity, error) {
 	}
 
 	for _, ident := range idents {
+		// If using the self-signed certificate (Linux-only), then we can return here without any further checks.
+		if runtime.GOOS == "linux" {
+			return ident, nil
+		}
+
 		if cert, err := ident.Certificate(); err == nil && (certHasEmail(cert, email) || certHasFingerprint(cert, fpr)) {
 			return ident, nil
 		}

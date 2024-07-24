@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	svckms "github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/github/smimesign/kms"
 )
 
@@ -36,7 +38,12 @@ type linuxStore struct {
 }
 
 func openStore() (Store, error) {
-	key, err := kms.NewPrivateKey(context.Background(), kmsKeyId)
+	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	awsCfg.Region = "us-west-2"
+	key, err := kms.NewPrivateKey(context.Background(), svckms.NewFromConfig(awsCfg), kmsKeyId)
 	if err != nil {
 		return nil, err
 	}

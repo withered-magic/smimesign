@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"fmt"
 	"io"
 	"log"
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 )
@@ -22,14 +22,10 @@ type PrivateKey struct {
 	publicKeyMu sync.RWMutex
 }
 
-func NewPrivateKey(ctx context.Context, keyId string) (*PrivateKey, error) {
-	awsCfg, err := awsconfig.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
+func NewPrivateKey(ctx context.Context, client *kms.Client, keyId string) (*PrivateKey, error) {
 	key := &PrivateKey{
 		ctx:    ctx,
-		client: kms.NewFromConfig(awsCfg),
+		client: client,
 		keyId:  keyId,
 	}
 	return key, nil
@@ -81,4 +77,18 @@ func (priv *PrivateKey) Sign(rand io.Reader, digest []byte, opts crypto.SignerOp
 		return nil, err
 	}
 	return output.Signature, nil
+}
+
+func chooseSigningAlgorithm(opts crypto.SignerOpts) (types.SigningAlgorithmSpec, error) {
+	hashFunc := opts.HashFunc()
+	switch hashFunc {
+	case crypto.SHA256:
+		return types.SigningAlgorithmSpecEcdsaSha256, nil
+	case crypto.SHA384:
+		return types.SigningAlgorithmSpecEcdsaSha384, nil
+	case crypto.SHA512:
+		return types.SigningAlgorithmSpecEcdsaSha512, nil
+	default:
+		return "", fmt.Errorf("unsupported hash func: %s", hashFunc)
+	}
 }
